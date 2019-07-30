@@ -40,10 +40,7 @@
 //! ```
 
 use cfg_if::cfg_if;
-use mio::{
-    Evented, Poll, PollOpt, Ready, Token,
-    tcp::TcpStream as MioTcpStream,
-};
+use mio::net::TcpStream as MioTcpStream;
 
 use std::{
     error::Error,
@@ -123,7 +120,7 @@ impl TcpStream {
         let addrs   = addr.to_socket_addrs()?;
         let mut err = None;
         for addr in addrs {
-            match MioTcpStream::connect(&addr) {
+            match MioTcpStream::connect(addr) {
                 Ok(stream) => return Ok(stream.into()),
                 Err(error) => err = Some(error),
             }
@@ -132,7 +129,7 @@ impl TcpStream {
     }
 
     /// Wrapper around mio's TcpStream::connect_stream
-    pub fn connect_stream(stream: net::TcpStream, addr: &SocketAddr) -> io::Result<Self> {
+    pub fn connect_stream(stream: net::TcpStream, addr: SocketAddr) -> io::Result<Self> {
         Ok(MioTcpStream::connect_stream(stream, addr)?.into())
     }
 
@@ -289,20 +286,6 @@ impl Write for TcpStream {
             #[cfg(feature = "rustls")]
             TcpStream::Rustls(ref mut tls)    => tls.flush(),
         }
-    }
-}
-
-impl Evented for TcpStream {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        <MioTcpStream as Evented>::register(self, poll, token, interest, opts)
-    }
-
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        <MioTcpStream as Evented>::reregister(self, poll, token, interest, opts)
-    }
-
-    fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        <MioTcpStream as Evented>::deregister(self, poll)
     }
 }
 
